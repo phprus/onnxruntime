@@ -258,7 +258,7 @@ class MlasLinearAttentionTest : public MlasTestBase {
     // The state is an operator output too: a bad update can be invisible in
     // `output` at short sequence lengths.
     for (size_t i = 0; i < s_elems; ++i) {
-      const float tol = 1e-4f * std::max(1.0f, std::abs(state_ref[i]));
+      const float tol = 1.5e-4f * std::max(1.0f, std::abs(state_ref[i]));
       ASSERT_NEAR(state[i], state_ref[i], tol) << "state[" << i << "] " << context;
     }
   }

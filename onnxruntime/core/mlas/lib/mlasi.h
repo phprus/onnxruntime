@@ -3126,7 +3126,8 @@ MlasMaximumFloat32x4(MLAS_FLOAT32X4 Vector1, MLAS_FLOAT32X4 Vector2)
 #elif defined(MLAS_WASM_SIMD_INTRINSICS)
     return wasm_f32x4_max(Vector1, Vector2);
 #elif defined(MLAS_LSX_INTRINSICS)
-    return __lsx_vfmax_s(Vector1, Vector2);
+    // Don't use __lsx_vfmax_s preserve _mm_min_ps behavior if NAN
+    return (MLAS_FLOAT32X4)__lsx_vbitsel_v((__m128i)Vector2, (__m128i)Vector1, __lsx_vfcmp_cle_s(Vector2, Vector1));
 #else
     return MlasBlendFloat32x4(Vector2, Vector1, Vector1 > Vector2);
 #endif
@@ -3148,7 +3149,8 @@ MlasMinimumFloat32x4(MLAS_FLOAT32X4 Vector1, MLAS_FLOAT32X4 Vector2)
 #elif defined(MLAS_WASM_SIMD_INTRINSICS)
     return wasm_f32x4_min(Vector1, Vector2);
 #elif defined(MLAS_LSX_INTRINSICS)
-    return __lsx_vfmin_s(Vector1, Vector2);
+    // Don't use __lsx_vfmin_s preserve _mm_min_ps behavior if NAN
+    return (MLAS_FLOAT32X4)__lsx_vbitsel_v((__m128i)Vector2, (__m128i)Vector1, __lsx_vfcmp_cle_s(Vector1, Vector2));
 #else
     return MlasBlendFloat32x4(Vector2, Vector1, Vector2 > Vector1);
 #endif

@@ -94,8 +94,8 @@ Return Value:
 	beqz	$a1, .LReduceMaximum.ExitKernel
 
 .LReduceMaximum.ProcessRemainingCountBy1:
-	vld	$vr16, $a0, 0
-	vfmax.s	$vr0, $vr0, $vr16
+	fld.s	$f16, $a0, 0
+	fmax.s	$f0, $f0, $f16
 	addi.d	$a0, $a0, 4                     # advance input by 1 element
 	addi.d	$a1, $a1, -1
         bnez	$a1, .LReduceMaximum.ProcessRemainingCountBy1

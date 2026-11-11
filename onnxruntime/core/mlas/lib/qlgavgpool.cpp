@@ -719,14 +719,10 @@ MlasQLinearGlobalAveragePoolNchw(
         auto Len = ImageSize;
         for (; Len >= 32; Len -= 32) {
 
-            const __m128i vi0 = __lsx_vld((const __m128i*)Input, 0);
-            __lsx_vinsgr2vr_d(vi0, 0, 1);
-            const __m128i vi1 = __lsx_vld((const __m128i*)(Input + 8), 0);
-            __lsx_vinsgr2vr_d(vi1, 0, 1);
-            const __m128i vi2 = __lsx_vld((const __m128i*)(Input + 16), 0);
-            __lsx_vinsgr2vr_d(vi2, 0, 1);
-            const __m128i vi3 = __lsx_vld((const __m128i*)(Input + 24), 0);
-            __lsx_vinsgr2vr_d(vi3, 0, 1);
+            const __m128i vi0 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(Input, 0), 0, 1);
+            const __m128i vi1 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(Input + 8, 0), 0, 1);
+            const __m128i vi2 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(Input + 16, 0), 0, 1);
+            const __m128i vi3 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(Input + 24, 0), 0, 1);
 
             if constexpr (std::is_signed<T8Bits>::value) {
 
@@ -756,12 +752,12 @@ MlasQLinearGlobalAveragePoolNchw(
 
             if constexpr (std::is_signed<T8Bits>::value) {
 
-                const __m128i vsum = __lsx_vsrai_h(__lsx_vilvl_b(__lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)Input, 0), 0, 1), vzero), 8);
+                const __m128i vsum = __lsx_vsrai_h(__lsx_vilvl_b(__lsx_vinsgr2vr_d(__lsx_vldrepl_d(Input, 0), 0, 1), vzero), 8);
                 vacc_lo = __lsx_vadd_w(vacc_lo, __lsx_vsrai_w(__lsx_vilvl_h(vsum, vzero), 16));
                 vacc_hi = __lsx_vadd_w(vacc_hi, __lsx_vsrai_w(__lsx_vilvh_h(vsum, vzero), 16));
             } else {
 
-                const __m128i vsum = __lsx_vilvl_b(vzero, __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)Input, 0), 0, 1));
+                const __m128i vsum = __lsx_vilvl_b(vzero, __lsx_vinsgr2vr_d(__lsx_vldrepl_d(Input, 0), 0, 1));
                 vacc_lo = __lsx_vadd_w(vacc_lo, __lsx_vilvl_h(vzero, vsum));
                 vacc_hi = __lsx_vadd_w(vacc_hi, __lsx_vilvh_h(vzero, vsum));
             }
@@ -774,12 +770,12 @@ MlasQLinearGlobalAveragePoolNchw(
 
             if constexpr (std::is_signed<T8Bits>::value) {
 
-                const __m128i vsum = __lsx_vsrai_h(__lsx_vilvl_b(__lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)buffer, 0), 0, 1), vzero), 8);
+                const __m128i vsum = __lsx_vsrai_h(__lsx_vilvl_b(__lsx_vinsgr2vr_d(__lsx_vldrepl_d(buffer, 0), 0, 1), vzero), 8);
                 vacc_lo = __lsx_vadd_w(vacc_lo, __lsx_vsrai_w(__lsx_vilvl_h(vsum, vzero), 16));
                 vacc_hi = __lsx_vadd_w(vacc_hi, __lsx_vsrai_w(__lsx_vilvh_h(vsum, vzero), 16));
             } else {
 
-                const __m128i vsum = __lsx_vilvl_b(vzero, __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)buffer, 0), 0, 1));
+                const __m128i vsum = __lsx_vilvl_b(vzero, __lsx_vinsgr2vr_d(__lsx_vldrepl_d(buffer, 0), 0, 1));
                 vacc_lo = __lsx_vadd_w(vacc_lo, __lsx_vilvl_h(vzero, vsum));
                 vacc_hi = __lsx_vadd_w(vacc_hi, __lsx_vilvh_h(vzero, vsum));
             }
@@ -818,20 +814,20 @@ MlasQLinearGlobalAveragePoolNhwcSingleBatch(
 {
 
     constexpr size_t PixelsPerIteration = 7;
-#define LOAD_FULL_CHANNELS()                                 \
-    const __m128i vi0 = __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)i0, 0), 0 , 1); \
-    i0 += 8;                                                 \
-    const __m128i vi1 = __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)i1, 0), 0 , 1); \
-    i1 += 8;                                                 \
-    const __m128i vi2 = __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)i2, 0), 0 , 1); \
-    i2 += 8;                                                 \
-    const __m128i vi3 = __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)i3, 0), 0 , 1); \
-    i3 += 8;                                                 \
-    const __m128i vi4 = __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)i4, 0), 0 , 1); \
-    i4 += 8;                                                 \
-    const __m128i vi5 = __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)i5, 0), 0 , 1); \
-    i5 += 8;                                                 \
-    const __m128i vi6 = __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)i6, 0), 0 , 1); \
+#define LOAD_FULL_CHANNELS()                                              \
+    const __m128i vi0 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(i0, 0), 0 , 1); \
+    i0 += 8;                                                              \
+    const __m128i vi1 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(i1, 0), 0 , 1); \
+    i1 += 8;                                                              \
+    const __m128i vi2 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(i2, 0), 0 , 1); \
+    i2 += 8;                                                              \
+    const __m128i vi3 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(i3, 0), 0 , 1); \
+    i3 += 8;                                                              \
+    const __m128i vi4 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(i4, 0), 0 , 1); \
+    i4 += 8;                                                              \
+    const __m128i vi5 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(i5, 0), 0 , 1); \
+    i5 += 8;                                                              \
+    const __m128i vi6 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(i6, 0), 0 , 1); \
     i6 += 8
 
 #define CALCULATE_ACCUMULATE_VECTORS()                                                         \
@@ -906,19 +902,19 @@ MlasQLinearGlobalAveragePoolNhwcSingleBatch(
         }
         if (c > 0) {
             const __m128i vi0 =
-                __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)(i0 >= LastOf8 ? memcpy(tail, i0, c) : i0), 0), 0 ,1);
+                __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*)(i0 >= LastOf8 ? memcpy(tail, i0, c) : i0), 0), 0 ,1);
             const __m128i vi1 =
-                __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)(i1 >= LastOf8 ? memcpy(tail, i1, c) : i1), 0), 0 ,1);
+                __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*)(i1 >= LastOf8 ? memcpy(tail, i1, c) : i1), 0), 0 ,1);
             const __m128i vi2 =
-                __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)(i2 >= LastOf8 ? memcpy(tail, i2, c) : i2), 0), 0 ,1);
+                __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*)(i2 >= LastOf8 ? memcpy(tail, i2, c) : i2), 0), 0 ,1);
             const __m128i vi3 =
-                __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)(i3 >= LastOf8 ? memcpy(tail, i3, c) : i3), 0), 0 ,1);
+                __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*)(i3 >= LastOf8 ? memcpy(tail, i3, c) : i3), 0), 0 ,1);
             const __m128i vi4 =
-                __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)(i4 >= LastOf8 ? memcpy(tail, i4, c) : i4), 0), 0 ,1);
+                __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*)(i4 >= LastOf8 ? memcpy(tail, i4, c) : i4), 0), 0 ,1);
             const __m128i vi5 =
-                __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)(i5 >= LastOf8 ? memcpy(tail, i5, c) : i5), 0), 0 ,1);
+                __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*)(i5 >= LastOf8 ? memcpy(tail, i5, c) : i5), 0), 0 ,1);
             const __m128i vi6 =
-                __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)(i6 >= LastOf8 ? memcpy(tail, i6, c) : i6), 0), 0 ,1);
+                __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*)(i6 >= LastOf8 ? memcpy(tail, i6, c) : i6), 0), 0 ,1);
 
             CALCULATE_ACCUMULATE_VECTORS();
 
@@ -974,19 +970,19 @@ MlasQLinearGlobalAveragePoolNhwcSingleBatch(
         }
 
         if (c > 0) {
-            const __m128i vi0 =
-                __lsx_vinsgr2vr_d(__lsx_vld((const __m128i*)(i0 >= LastOf8 ? memcpy(tail, i0, c) : i0), 0), 0 ,1);
-            const __m128i vi1 = __lsx_vinsgr2vr_d(__lsx_vld(
+            const __m128i vi0 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(
+                (const __m128i*)(i0 >= LastOf8 ? memcpy(tail, i0, c) : i0), 0), 0 ,1);
+            const __m128i vi1 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(
                 (const __m128i*)(1 < ImageSize && i1 >= LastOf8 ? memcpy(tail, i1, c) : i1), 0), 0, 1);
-            const __m128i vi2 = __lsx_vinsgr2vr_d(__lsx_vld(
+            const __m128i vi2 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(
                 (const __m128i*)(2 < ImageSize && i2 >= LastOf8 ? memcpy(tail, i2, c) : i2), 0), 0, 1);
-            const __m128i vi3 = __lsx_vinsgr2vr_d(__lsx_vld(
+            const __m128i vi3 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(
                 (const __m128i*)(3 < ImageSize && i3 >= LastOf8 ? memcpy(tail, i3, c) : i3), 0), 0, 1);
-            const __m128i vi4 = __lsx_vinsgr2vr_d(__lsx_vld(
+            const __m128i vi4 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(
                 (const __m128i*)(4 < ImageSize && i4 >= LastOf8 ? memcpy(tail, i4, c) : i4), 0), 0, 1);
-            const __m128i vi5 = __lsx_vinsgr2vr_d(__lsx_vld(
+            const __m128i vi5 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(
                 (const __m128i*)(5 < ImageSize && i5 >= LastOf8 ? memcpy(tail, i5, c) : i5), 0), 0, 1);
-            const __m128i vi6 = __lsx_vinsgr2vr_d(__lsx_vld(
+            const __m128i vi6 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(
                 (const __m128i*)(6 < ImageSize && i6 >= LastOf8 ? memcpy(tail, i6, c) : i6), 0), 0, 1);
 
             CALCULATE_ACCUMULATE_VECTORS();

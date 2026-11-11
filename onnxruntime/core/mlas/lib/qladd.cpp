@@ -685,23 +685,21 @@ MlasQLinearAddKernelHelper(
 
     MLAS_FLOAT32X4 va_lo, va_hi, vb_lo, vb_hi;
     if (IsScalarB) {
-        float tmp_f = (float)*InputB;
-        uint32_t *tmp_p = (uint32_t *)&tmp_f;
-        vb_lo = MlasReinterpretAsFloat32x4(__lsx_vreplgr2vr_w(*tmp_p));
+        vb_lo = MlasBroadcastFloat32x4((float)*InputB);
         VectorFixedPart = __lsx_vfmadd_s(vb_lo, VectorScaleRatio_BC, VectorFixedPart);
     }
 
     __m128i tmp, tmp1;
 
     while (N >= 8) {
-        const auto va_low_half = __lsx_vinsgr2vr_d(__lsx_vld((const MLAS_INT32X4*)InputA, 0), 0 ,1);
+        const auto va_low_half = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(InputA, 0), 0 ,1);
         const auto va_i16x8 = __lsx_vilvl_b(va_low_half, va_low_half);
         InputA += 8;
         va_lo = __lsx_vffint_s_w(MlasShiftRightInt32<DataType>(__lsx_vilvl_h(va_i16x8, va_i16x8), 24));
         va_hi = __lsx_vffint_s_w(MlasShiftRightInt32<DataType>(__lsx_vilvh_h(va_i16x8, va_i16x8), 24));
 
         if (!IsScalarB) {
-            const auto vb_low_half = __lsx_vinsgr2vr_d(__lsx_vld((const MLAS_INT32X4*)InputB, 0), 0 ,1);
+            const auto vb_low_half = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(InputB, 0), 0 ,1);
             const auto vb_i16x8 = __lsx_vilvl_b(vb_low_half, vb_low_half);
             InputB += 8;
             vb_lo = __lsx_vffint_s_w(MlasShiftRightInt32<DataType>(__lsx_vilvl_h(vb_i16x8, vb_i16x8), 24));
@@ -723,7 +721,7 @@ MlasQLinearAddKernelHelper(
         MLAS_INT32X4 vc = MlasPackS16_128<DataType>(vc_i16x8, vc_i16x8);
 
         N -= 8;
-        __lsx_vst(__lsx_vinsgr2vr_d(__lsx_vld((MLAS_INT32X4*)OutputC, 0), __lsx_vpickve2gr_d(vc, 0), 0), (MLAS_INT32X4*)OutputC, 0);
+        __lsx_vstelm_d(vc, OutputC, 0, 0);
         OutputC += 8;
     }
 
@@ -731,14 +729,14 @@ MlasQLinearAddKernelHelper(
         uint8_t TailData[8] = { 0 };
 
         MlasCopyTailBytes(TailData, (const uint8_t*)InputA, N);
-        const auto va_low_half = __lsx_vinsgr2vr_d(__lsx_vld((const MLAS_INT32X4*)TailData, 0), 0 ,1);
+        const auto va_low_half = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(TailData, 0), 0 ,1);
         const auto va_i16x8 = __lsx_vilvl_b(va_low_half, va_low_half);
         va_lo = __lsx_vffint_s_w(MlasShiftRightInt32<DataType>(__lsx_vilvl_h(va_i16x8, va_i16x8), 24));
         va_hi = __lsx_vffint_s_w(MlasShiftRightInt32<DataType>(__lsx_vilvh_h(va_i16x8, va_i16x8), 24));
 
         if (!IsScalarB) {
             MlasCopyTailBytes(TailData, (const uint8_t*)InputB, N);
-            const auto vb_low_half = __lsx_vinsgr2vr_d(__lsx_vld((const MLAS_INT32X4*)TailData, 0), 0 ,1);
+            const auto vb_low_half = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(TailData, 0), 0 ,1);
             const auto vb_i16x8 = __lsx_vilvl_b(vb_low_half, vb_low_half);
             vb_lo = __lsx_vffint_s_w(MlasShiftRightInt32<DataType>(__lsx_vilvl_h(vb_i16x8, vb_i16x8), 24));
             vb_hi = __lsx_vffint_s_w(MlasShiftRightInt32<DataType>(__lsx_vilvh_h(vb_i16x8, vb_i16x8), 24));

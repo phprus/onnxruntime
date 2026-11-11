@@ -159,6 +159,8 @@ using W2KernelFn = size_t(MLASCALL*)(
     const std::byte*, float*, size_t, size_t, size_t, size_t,
     const float*, size_t, const float*, const float*);
 
+#if defined(MLAS_TARGET_AMD64)
+
 [[maybe_unused]] void RunW2Case(size_t M, size_t N, size_t K, bool WithBias, uint32_t seed,
                                 bool WithZeroPoints, W2KernelFn kernel,
                                 const char* kernel_name) {
@@ -299,6 +301,8 @@ using W2KernelFn = size_t(MLASCALL*)(
         << " WithZeroPoints=" << WithZeroPoints;
   }
 }
+
+#endif
 
 }  // namespace
 
@@ -651,6 +655,8 @@ void ReferenceGemm_W2_CompInt8_BlkLen128(size_t M, size_t N, size_t K,
   }
 }
 
+#if defined(MLAS_TARGET_AMD64)
+
 [[maybe_unused]] void RunW2Case_BlkLen128(size_t M, size_t N, size_t K, bool WithBias, uint32_t seed,
                                           bool WithZeroPoints, W2KernelFn kernel,
                                           const char* kernel_name) {
@@ -780,6 +786,8 @@ void ReferenceGemm_W2_CompInt8_BlkLen128(size_t M, size_t N, size_t K,
         << " WithZeroPoints=" << WithZeroPoints;
   }
 }
+
+#endif
 
 //
 // Shape set for BlkLen=128. K must be a multiple of 128 (BlkLen=128 constraint).
@@ -1043,6 +1051,8 @@ void ReferenceGemm_W2_CompInt8_BlkLen32(size_t M, size_t N, size_t K,
   }
 }
 
+#if defined(MLAS_TARGET_AMD64)
+
 [[maybe_unused]] void RunW2Case_BlkLen32(size_t M, size_t N, size_t K, bool WithBias, uint32_t seed,
                                          bool WithZeroPoints, W2KernelFn kernel,
                                          const char* kernel_name) {
@@ -1171,6 +1181,8 @@ void ReferenceGemm_W2_CompInt8_BlkLen32(size_t M, size_t N, size_t K,
         << " WithZeroPoints=" << WithZeroPoints;
   }
 }
+
+#endif
 
 // K-shape constraint: K multiple of 32 (BlkLen=32). Covers BlockCountK in
 // {1, 2, 3, 4, 8, 16, 32, 64} -- both K-tail variants (BlockCountK not a

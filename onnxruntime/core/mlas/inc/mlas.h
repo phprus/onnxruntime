@@ -90,7 +90,7 @@ Abstract:
 // Define the support levels for the target architecture.
 //
 
-#if defined(MLAS_TARGET_AMD64) || defined (MLAS_TARGET_POWER) || defined (MLAS_TARGET_ZVECTOR)
+#if defined(MLAS_TARGET_AMD64) || defined (MLAS_TARGET_POWER) || defined (MLAS_TARGET_ZVECTOR) || defined(MLAS_TARGET_LARCH64)
 #define MLAS_SUPPORTS_GEMM_DOUBLE
 #endif
 

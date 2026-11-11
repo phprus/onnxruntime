@@ -61,7 +61,7 @@ MlasGemmQuantCopyPackA<MLAS_GEMM_U8X8_KERNEL_LSX>(
     )
 {
     MLAS_UNREFERENCED_PARAMETER(AIsSigned);
-    const __m128i ZeroVector = __lsx_vrepli_d(0);
+    const __m128i ZeroVector = __lsx_vldi(0);
     uint16_t val = 1;
     const __m128i OnesWordBroadcast = __lsx_vreplgr2vr_h(val);
     uint8_t PaddedMatrixAData[8] = { 0 };
@@ -91,13 +91,15 @@ MlasGemmQuantCopyPackA<MLAS_GEMM_U8X8_KERNEL_LSX>(
 
         while (k >= 8) {
 
-            __m128i Bytes = __lsx_vld((const __m128i*) & a[0], 0);
-            __lsx_vinsgr2vr_d(Bytes, 0, 1);
+            __m128i Bytes = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(& a[0], 0), 0, 1);
             __m128i Words = __lsx_vilvl_b(ZeroVector, Bytes);
 
             ReductionVector = __lsx_vadd_h(ReductionVector, Words);
 
-            __lsx_vst(Words, (__m128i*) & D[0], 0);
+            __lsx_vstelm_d(Words, & D[0], 0, 0);
+
+//            _mm_storel_epi64((__m128i*) & D[0], Bytes);
+//            __lsx_vst(Words, (__m128i*) & D[0], 0);
 
             a += 8;
             D += 8;
@@ -109,6 +111,20 @@ MlasGemmQuantCopyPackA<MLAS_GEMM_U8X8_KERNEL_LSX>(
             //
             // Copy the remaining bytes to the zero padded stack buffer.
             //
+/*
+            __lsx_vstelm_d(ZeroVector, & D[0], 0, 0);
+//            _mm_storel_epi64((__m128i*) & D[0], ZeroVector);
+
+            std::copy_n(&a[0], k, &D[0]);
+
+            __m128i Bytes = __lsx_vinsgr2vr_d(__lsx_vldrepl_d(& D[0], 0), 0, 1);
+            D += (k + 3) & ~3;
+
+//            __m128i Words = _mm_unpacklo_epi8(Bytes, ZeroVector);
+            __m128i Words = __lsx_vilvl_b(ZeroVector, Bytes);
+//            ReductionVector = _mm_add_epi32(ReductionVector, _mm_madd_epi16(Words, OnesWordBroadcast));
+            ReductionVector = __lsx_vadd_h(ReductionVector, Words);
+*/
 
             uint8_t* padded = PaddedMatrixAData;
             uint8_t* padded_end = padded + k;
@@ -119,8 +135,7 @@ MlasGemmQuantCopyPackA<MLAS_GEMM_U8X8_KERNEL_LSX>(
                 a++;
             } while (padded < padded_end);
 
-            __m128i Bytes = __lsx_vld((__m128i*)PaddedMatrixAData, 0);
-            __lsx_vinsgr2vr_d(Bytes, 0, 1); 
+            __m128i Bytes = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((__m128i*)PaddedMatrixAData, 0), 0, 1); 
             __m128i Words = __lsx_vilvl_b(ZeroVector, Bytes);
 
             ReductionVector = __lsx_vadd_h(ReductionVector, Words);
@@ -135,6 +150,7 @@ MlasGemmQuantCopyPackA<MLAS_GEMM_U8X8_KERNEL_LSX>(
                 D += 2;
                 Words = __lsx_vshuf4i_w(Words, 0x39); //(0, 3, 2, 1)
             }
+
         }
 
         //
@@ -219,10 +235,8 @@ MlasGemmQuantCopyPackB<MLAS_GEMM_U8X8_KERNEL_LSX>(
 
         while (k >= MLAS_GEMM_U8X8_KERNEL_LSX::PackedK) {
 
-            __m128i BytesRow0 = __lsx_vld((const __m128i*) & b[0], 0);
-            __lsx_vinsgr2vr_d(BytesRow0, 0, 1);
-            __m128i BytesRow1 = __lsx_vld((const __m128i*) & b[ldb], 0);
-            __lsx_vinsgr2vr_d(BytesRow1, 0, 1);
+            __m128i BytesRow0 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*) & b[0], 0), 0, 1);
+            __m128i BytesRow1 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*) & b[ldb], 0), 0, 1);
 
             MlasGemmU8X8CopyPackBProcessLSX(D, BytesRow0, BytesRow1, BitFlipVector, ColumnSums);
 
@@ -233,8 +247,7 @@ MlasGemmQuantCopyPackB<MLAS_GEMM_U8X8_KERNEL_LSX>(
 
         if (k > 0) {
 
-            __m128i BytesRow0 = __lsx_vld((const __m128i*) & b[0], 0);
-            __lsx_vinsgr2vr_d(BytesRow0, 0, 1);
+            __m128i BytesRow0 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*) & b[0], 0), 0, 1);
 
             MlasGemmU8X8CopyPackBProcessLSX(D, BytesRow0, BitFlipVector, BitFlipVector, ColumnSums);
 
@@ -293,10 +306,8 @@ MlasGemmQuantCopyPackB<MLAS_GEMM_U8X8_KERNEL_LSX>(
                 bcopy++;
             } while (padded < padded_end);
 
-            __m128i BytesRow0 = __lsx_vld((__m128i*) & PaddedMatrixBData[0], 0);
-            __lsx_vinsgr2vr_d(BytesRow0, 0, 1); 
-            __m128i BytesRow1 = __lsx_vld((__m128i*) & PaddedMatrixBData[8], 0);
-            __lsx_vinsgr2vr_d(BytesRow1, 0, 1); 
+            __m128i BytesRow0 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((__m128i*) & PaddedMatrixBData[0], 0), 0, 1); 
+            __m128i BytesRow1 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((__m128i*) & PaddedMatrixBData[8], 0), 0, 1); 
 
             MlasGemmU8X8CopyPackBProcessLSX(D, BytesRow0, BytesRow1, BitFlipVector, ColumnSums);
 
@@ -317,8 +328,7 @@ MlasGemmQuantCopyPackB<MLAS_GEMM_U8X8_KERNEL_LSX>(
                 bcopy++;
             } while (padded < padded_end);
 
-            __m128i BytesRow0 = __lsx_vld((__m128i*) & PaddedMatrixBData[0], 0);
-            __lsx_vinsgr2vr_d(BytesRow0, 0, 1); 
+            __m128i BytesRow0 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((__m128i*) & PaddedMatrixBData[0], 0), 0, 1); 
 
             MlasGemmU8X8CopyPackBProcessLSX(D, BytesRow0, BitFlipVector, BitFlipVector, ColumnSums);
         }
@@ -387,6 +397,18 @@ MlasGemmQuantKernel<MLAS_GEMM_U8X8_KERNEL_LSX>(
         // Initialize the accumulators with the row and column sums.
         //
 
+
+        Accumulators[0] = __lsx_vreplgr2vr_w(RowSumBuffer[0]);
+        Accumulators[1] = Accumulators[0];
+
+        if (ZeroPointB != nullptr) {
+            Accumulators[0] = __lsx_vmul_w(Accumulators[0], __lsx_vld((const __m128i*) & ZeroPointB[0], 0));
+            Accumulators[1] = __lsx_vmul_w(Accumulators[1], __lsx_vld((const __m128i*) & ZeroPointB[4], 0));
+            ZeroPointB += 8;
+        }
+
+
+/*
         int32_t RowSumValue = RowSumBuffer[0];
 
         if (ZeroPointB != nullptr) {
@@ -408,7 +430,7 @@ MlasGemmQuantKernel<MLAS_GEMM_U8X8_KERNEL_LSX>(
             Accumulators[0] = __lsx_vreplgr2vr_w(RowSumValue);
             Accumulators[1] = Accumulators[0];
         }
-
+*/
         Accumulators[0] = __lsx_vadd_w(Accumulators[0], __lsx_vld((const __m128i*) & ColumnSumBuffer[0], 0));
         Accumulators[1] = __lsx_vadd_w(Accumulators[1], __lsx_vld((const __m128i*) & ColumnSumBuffer[4], 0));
         ColumnSumBuffer += 8;
@@ -446,7 +468,7 @@ MlasGemmQuantKernel<MLAS_GEMM_U8X8_KERNEL_LSX>(
 
         while (k > 0) {
 
-            __m128i ABroadcast = __lsx_vldrepl_w((int32_t*)a, 0);
+            __m128i ABroadcast = __lsx_vldrepl_w(a, 0);
             MlasGemmU8X8MultiplyAccumulateRowLSX(ABroadcast, &B[0], Accumulators);
 
             a += 2;
@@ -494,10 +516,12 @@ MlasGemmQuantKernel<MLAS_GEMM_U8X8_KERNEL_LSX>(
             if ((CountN & 2) != 0) {
 
                 if (!ZeroMode) {
-                    Accumulators[0] = __lsx_vadd_w(Accumulators[0], __lsx_vinsgr2vr_d(__lsx_vld((__m128i*) & C[0], 0), 0, 1));
+                    Accumulators[0] = __lsx_vadd_w(Accumulators[0], __lsx_vinsgr2vr_d(__lsx_vldrepl_d((__m128i*) & C[0], 0), 0, 1));
                 }
 
-                *((uint64_t *)&C[0]) = __lsx_vpickve2gr_d(Accumulators[0], 0);
+                __lsx_vstelm_d(Accumulators[0], & C[0], 0, 0);
+
+//                *((uint64_t *)&C[0]) = __lsx_vpickve2gr_d(Accumulators[0], 0);
                 C += 2;
 
                 Accumulators[0] = __lsx_vshuf4i_w(Accumulators[0], 0xee);
@@ -589,14 +613,14 @@ MlasGemmQuantCopyPackA<MLAS_GEMM_S8S8_KERNEL_LSX>(
 
         while (k >= 8) {
 
-            __m128i Bytes = __lsx_vld((const __m128i*) & a[0], 0);
-            __lsx_vinsgr2vr_d(Bytes, 0, 1);
+            __m128i Bytes = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*) & a[0], 0), 0, 1);
             // Sign extend bytes to words
             __m128i Words = __lsx_vsrai_h(__lsx_vilvl_b(Bytes, Bytes), 8);
 
             ReductionVector = __lsx_vadd_h(ReductionVector, Words);
 
-            __lsx_vst(Words, (__m128i*) & D[0], 0);
+//            __lsx_vst(Words, (__m128i*) & D[0], 0);
+            __lsx_vstelm_d(Words, & D[0], 0, 0);
 
             a += 8;
             D += 8;
@@ -614,8 +638,7 @@ MlasGemmQuantCopyPackA<MLAS_GEMM_S8S8_KERNEL_LSX>(
                 a++;
             } while (padded < padded_end);
 
-            __m128i Bytes = __lsx_vld((__m128i*)PaddedMatrixAData, 0);
-            __lsx_vinsgr2vr_d(Bytes, 0, 1);
+            __m128i Bytes = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((__m128i*)PaddedMatrixAData, 0), 0, 1);
             // Sign extend bytes to words
             __m128i Words = __lsx_vsrai_h(__lsx_vilvl_b(Bytes, Bytes), 8);
 
@@ -675,10 +698,8 @@ MlasGemmQuantCopyPackB<MLAS_GEMM_S8S8_KERNEL_LSX>(
 
         while (k >= MLAS_GEMM_S8S8_KERNEL_LSX::PackedK) {
 
-            __m128i BytesRow0 = __lsx_vld((const __m128i*) & b[0], 0);
-            __lsx_vinsgr2vr_d(BytesRow0, 0, 1);
-            __m128i BytesRow1 = __lsx_vld((const __m128i*) & b[ldb], 0);
-            __lsx_vinsgr2vr_d(BytesRow1, 0, 1);
+            __m128i BytesRow0 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*) & b[0], 0), 0, 1);
+            __m128i BytesRow1 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*) & b[ldb], 0), 0, 1);
 
             // Reuse the U8X8 helper, passing the correct BitFlipVector
             MlasGemmU8X8CopyPackBProcessLSX(D, BytesRow0, BytesRow1, BitFlipVector, ColumnSums);
@@ -690,8 +711,7 @@ MlasGemmQuantCopyPackB<MLAS_GEMM_S8S8_KERNEL_LSX>(
 
         if (k > 0) {
             // Handle remaining row (sign extension happens in MlasGemmU8X8CopyPackBProcessLSX)
-            __m128i BytesRow0 = __lsx_vld((const __m128i*) & b[0], 0);
-             __lsx_vinsgr2vr_d(BytesRow0, 0, 1);
+            __m128i BytesRow0 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((const __m128i*) & b[0], 0), 0, 1);
             // Use BitFlipVector for the second row as it's zero padded and sign extended
             MlasGemmU8X8CopyPackBProcessLSX(D, BytesRow0, BitFlipVector, BitFlipVector, ColumnSums);
             D += 16;
@@ -742,10 +762,8 @@ MlasGemmQuantCopyPackB<MLAS_GEMM_S8S8_KERNEL_LSX>(
                 bcopy++;
             } while (padded < padded_end);
 
-            __m128i BytesRow0 = __lsx_vld((__m128i*) & PaddedMatrixBData[0], 0);
-            __lsx_vinsgr2vr_d(BytesRow0, 0, 1);
-            __m128i BytesRow1 = __lsx_vld((__m128i*) & PaddedMatrixBData[8], 0);
-            __lsx_vinsgr2vr_d(BytesRow1, 0, 1);
+            __m128i BytesRow0 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((__m128i*) & PaddedMatrixBData[0], 0), 0, 1);
+            __m128i BytesRow1 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((__m128i*) & PaddedMatrixBData[8], 0), 0, 1);
 
             MlasGemmU8X8CopyPackBProcessLSX(D, BytesRow0, BytesRow1, BitFlipVector, ColumnSums);
 
@@ -766,8 +784,7 @@ MlasGemmQuantCopyPackB<MLAS_GEMM_S8S8_KERNEL_LSX>(
                 bcopy++;
             } while (padded < padded_end);
 
-            __m128i BytesRow0 = __lsx_vld((__m128i*) & PaddedMatrixBData[0], 0);
-            __lsx_vinsgr2vr_d(BytesRow0, 0, 1);
+            __m128i BytesRow0 = __lsx_vinsgr2vr_d(__lsx_vldrepl_d((__m128i*) & PaddedMatrixBData[0], 0), 0, 1);
 
             MlasGemmU8X8CopyPackBProcessLSX(D, BytesRow0, BitFlipVector, BitFlipVector, ColumnSums);
         }
@@ -914,5 +931,5 @@ const MLAS_GEMM_QUANT_DISPATCH MlasGemmS8U8DispatchLSX = {
     nullptr,
     MLAS_GEMM_S8U8_KERNEL_LSX::PackedK,
     0,
-    1 // aLSXmbly kernel M stride
+    1 // assembly kernel M stride
 };

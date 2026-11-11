@@ -1046,7 +1046,7 @@ Return Value:
         this->TransposePackB16x4Routine = MlasSgemmTransposePackB16x4Lasx;
 
         // add new sqn-lasx kernel
-        this->QNBitGemmDispatch = &MlasSQNBitGemmDispatchLasx;
+//        this->QNBitGemmDispatch = &MlasSQNBitGemmDispatchLasx;
 
         this->GemmU8S8Dispatch = &MlasGemmU8X8DispatchLSX;
         this->GemmU8U8Dispatch = &MlasGemmU8X8DispatchLSX;

@@ -688,7 +688,7 @@ SQ4BitGemm_CompFp32(
                     float* c_strip = c_out;
                     size_t RowsRemaining = RangeCountM;
                     while (RowsRemaining > 0) {
-#if (defined(MLAS_TARGET_AMD64_IX86) || defined(MLAS_TARGET_POWER) || defined(MLAS_TARGET_S390X) || defined(MLAS_TARGET_LARCH64)) && !defined(FORCE_GENERIC_ALGORITHMS)
+#if (defined(MLAS_TARGET_AMD64_IX86) || defined(MLAS_TARGET_POWER) || defined(MLAS_TARGET_S390X) /*|| defined(MLAS_TARGET_LARCH64)*/) && !defined(FORCE_GENERIC_ALGORITHMS)
                         auto RowsHandled = GetMlasPlatform().GemmFloatKernel(
                             a_strip, dequant_b, c_strip, K, RowsRemaining, CountN, lda, c_out_ldc, 1.f, true
                         );
@@ -712,7 +712,7 @@ SQ4BitGemm_CompFp32(
 
         size_t RowsRemaining = RangeCountM;
         while (RowsRemaining > 0) {
-#if (defined(MLAS_TARGET_AMD64_IX86) || defined(MLAS_TARGET_POWER) || defined(MLAS_TARGET_S390X) || defined(MLAS_TARGET_LARCH64)) && !defined(FORCE_GENERIC_ALGORITHMS)
+#if (defined(MLAS_TARGET_AMD64_IX86) || defined(MLAS_TARGET_POWER) || defined(MLAS_TARGET_S390X) /*|| defined(MLAS_TARGET_LARCH64)*/) && !defined(FORCE_GENERIC_ALGORITHMS)
             auto RowsHandled = GetMlasPlatform().GemmFloatKernel(
                 a_row, dequant_b, c_blk, K, RowsRemaining, CountN, lda, ldc, 1.f, true
             );

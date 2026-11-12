@@ -1276,7 +1276,30 @@ extern "C" {
 #ifdef FORCE_GENERIC_ALGORITHMS
     MLAS_GEMM_FLOAT_KERNEL_GENERIC MlasSgemmKernelZero;
     MLAS_GEMM_FLOAT_KERNEL_GENERIC MlasSgemmKernelAdd;
+#else
+
+    size_t MLASCALL MlasSgemmKernelZero(
+        const float* A,
+        const float* B,
+        float* C,
+        size_t CountK,
+        size_t CountM,
+        size_t CountN,
+        size_t lda,
+        size_t ldc,
+        float alpha);
+    size_t MLASCALL MlasSgemmKernelAdd(
+        const float* A,
+        const float* B,
+        float* C,
+        size_t CountK,
+        size_t CountM,
+        size_t CountN,
+        size_t lda,
+        size_t ldc,
+        float alpha);
 #endif
+
 #elif defined(MLAS_TARGET_RISCV64)
 #if defined(MLAS_USE_RVV)
     MLAS_GEMM_FLOAT_KERNEL MlasGemmFloatKernelRvv;

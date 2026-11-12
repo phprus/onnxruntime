@@ -904,7 +904,7 @@ MlasGemmQuantGetDispatch(
     if (GetMlasPlatform().GemmU8X8Dispatch == &MlasGemm8X8DispatchPOWER10) {
         GemmQuantDispatch = GetMlasPlatform().GemmU8X8Dispatch;
     }
-#elif defined(MLAS_TARGET_LARCH64)
+#elif defined(MLAS_TARGET_LARCH64) && 0 /* BROKEN! */
     if (AIsSigned) {
         GemmQuantDispatch =
             BIsSigned ? GetMlasPlatform().GemmS8S8Dispatch : GetMlasPlatform().GemmS8U8Dispatch;
